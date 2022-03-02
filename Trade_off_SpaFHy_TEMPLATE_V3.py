@@ -110,8 +110,8 @@ if __name__ == '__main__':
             self.CH4_MEAN =self.data.loc[(slice(None),slice(None),slice(None)),["CH4"+str(i) for i in range(2000,2016)]].mean(axis=1)*self.AREA_ALL*10*5
             self.CO2_MEAN =self.data.loc[(slice(None),slice(None),slice(None)),["CO2"+str(i) for i in range(2000,2016)]].mean(axis=1)*self.AREA_ALL*10*5
             
-            self.Harvested_V_log = self.data.loc[(slice(None),slice(None),slice(None)),"income_log_change"]*self.AREA_ALL
-            self.Harvested_V_pulp = self.data.loc[(slice(None),slice(None),slice(None)),"income_pulp_change"]*self.AREA_ALL
+            self.Income_log = self.data.loc[(slice(None),slice(None),slice(None)),"income_log_change"]*self.AREA_ALL
+            self.Income_pulp = self.data.loc[(slice(None),slice(None),slice(None)),"income_pulp_change"]*self.AREA_ALL
             
             self.H_V_LOG = self.data.loc[(slice(None),slice(None),slice(None)),"Harvested_V_log"]*self.AREA_ALL
             self.H_V_PULP = self.data.loc[(slice(None),slice(None),slice(None)),"Harvested_V_pulp"]*self.AREA_ALL
@@ -291,37 +291,6 @@ if __name__ == '__main__':
         df = pd.DataFrame(data=d, index = MF_var)
         return df
 
-
-
-        import argparse
-        import multiprocessing as mp
-        import glob
-        import pickle
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--weather', help='which weather region, lanssuomi, lappi, itasuomi... ', type=str)
-        parser.add_argument('--database', help ='from SIMO', type=str)
-        parser.add_argument('--region', help ='Name of region  -- Uusimaa, Pohjois-Pohjanmaa or Keski-Suomi', type=str)
-        
-        args = parser.parse_args()
-        
-        DATA_ANALYSIS(args.weather,args.database,args.region)
-        
-
-
-
-        import argparse
-        import multiprocessing as mp
-        import glob
-        import pickle
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--weather', help='which weather region, lanssuomi, lappi, itasuomi... ', type=str)
-        parser.add_argument('--database', help ='from SIMO', type=str)
-        parser.add_argument('--region', help ='Name of region  -- Uusimaa, Pohjois-Pohjanmaa or Keski-Suomi', type=str)
-        
-        args = parser.parse_args()
-        
-        DATA_ANALYSIS(args.weather,args.database,args.region)
-        
     t2 = optimization()    
 
     t3 = copy.deepcopy(t2)
@@ -333,18 +302,18 @@ if __name__ == '__main__':
     #CALCULATE MINIMUM AND MAXIMUM OF EACH CRITION WITHOUT CONSTRAINTS
 
     #This section of code allows for array multiplication -- faster than loops.
-    DATA = t3.Harvested_V_log+t3.Harvested_V_pulp-t3.DITCHMAINT
+    DATA = t3.Income_log+t3.Income_pulp-t3.DITCHMAINT
     DATA = pd.DataFrame(DATA)
     DATA = DATA.rename(columns = {0:"Harvested_V"})
     peat = t3.PEAT
     peat = pd.DataFrame(peat)
     DATA["PEAT"]= peat["PEAT"]
-    Harvested_V_log = t3.Harvested_V_log
-    Harvested_V_log = pd.DataFrame(Harvested_V_log)
-    DATA["Harvested_V_log"]= Harvested_V_log[0]
-    Harvested_V_pulp = t3.Harvested_V_pulp
-    Harvested_V_pulp = pd.DataFrame(Harvested_V_pulp)
-    DATA["Harvested_V_pulp"]= Harvested_V_pulp[0]
+    Income_log = t3.Income_log
+    Income_log = pd.DataFrame(Income_log)
+    DATA["Income_log"]= Income_log[0]
+    Income_pulp = t3.Income_pulp
+    Income_pulp = pd.DataFrame(Income_pulp)
+    DATA["Income_pulp"]= Income_pulp[0]
 
     H_V_LOG = t3.H_V_LOG
     H_V_LOG = pd.DataFrame(H_V_LOG)
@@ -447,13 +416,11 @@ if __name__ == '__main__':
         t3.model1.DEC_inc = Var(within=NonNegativeReals)#, bounds=(0,1), initialize=1)
         
         def outcome_rule(model1):
-            #INC  = sum((t3.Harvested_V_log.loc[s,t3.years[0],r]+t3.Harvested_V_pulp.loc[s,t3.years[0],r]) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
             return t3.model1.DEC_inc
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
         
         def INC_bounded_rule(model1,year):
-            #INC = sum((t3.Harvested_V_log.loc[s,t3.years[0],r]+t3.Harvested_V_pulp.loc[s,t3.years[0],r]) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
-            INC2 = (sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))
+            INC2 = (sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))
             return INC2 >= t3.model1.DEC_inc
         t3.model1.INC_bounded = Constraint(t3.years,rule=INC_bounded_rule)    
         
@@ -467,12 +434,12 @@ if __name__ == '__main__':
             
         CH4_CO2EQV = CH4*25
         N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
+        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
         
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         
-        payoff_table["1"] = [min([(sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
-        max_INC = t3.model1.DEC_inc.value#sum((t3.Harvested_V_log.loc[s,t3.years[0],r]+t3.Harvested_V_pulp.loc[s,t3.years[0],r]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        payoff_table["1"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
+        max_INC = t3.model1.DEC_inc.value
         print("NEW")
         print(max_INC)
         
@@ -483,8 +450,7 @@ if __name__ == '__main__':
         t3.model1.del_component(t3.model1.INC_bounded_index)   
         
         def INC_bounded_rule(model1,year):
-            #INC = sum((t3.Harvested_V_log.loc[s,t3.years[0],r]+t3.Harvested_V_pulp.loc[s,t3.years[0],r]) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
-            INC2 = (sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))
+            INC2 = (sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))
             return INC2 >= 0
         t3.model1.INC_bounded = Constraint(t3.years,rule=INC_bounded_rule)  
         
@@ -499,7 +465,7 @@ if __name__ == '__main__':
             CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             CH4_CO2EQV = CH4*25
             N2O_CO2EQV = N2O*298
-            PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
+            PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
             return PEAT
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
         print("MAX GHG")
@@ -514,11 +480,11 @@ if __name__ == '__main__':
             
         CH4_CO2EQV = CH4*25
         N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
+        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
         
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         
-        payoff_table["2"] = [min([(sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
+        payoff_table["2"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
         t3.model1.del_component(t3.model1.OBJ)   
         
         def outcome_rule(model1):
@@ -530,7 +496,7 @@ if __name__ == '__main__':
             CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             CH4_CO2EQV = CH4*25
             N2O_CO2EQV = N2O*298
-            PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
+            PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
             return PEAT
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=minimize)
         print("Min GHG")
@@ -545,16 +511,16 @@ if __name__ == '__main__':
         CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         CH4_CO2EQV = CH4*25
         N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
+        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
         
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         
-        payoff_table["3"] = [min([(sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]    
+        payoff_table["3"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]    
         
         t3.model1.del_component(t3.model1.OBJ)   
         
         def outcome_rule(model1):
-            NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
+            NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
             return NPV
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
         print("MAX NPV")
@@ -568,22 +534,22 @@ if __name__ == '__main__':
             
         CH4_CO2EQV = CH4*25
         N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
+        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
         
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         
-        payoff_table["4"] = [min([(sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
+        payoff_table["4"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
         
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         
-        max_NPV = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        max_NPV = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         print(max_NPV)
         max_npv = max_npv + [max_NPV]
         
         t3.model1.del_component(t3.model1.OBJ)   
         
         def outcome_rule(model1):
-            NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
+            NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
             return NPV
         
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=minimize)
@@ -599,18 +565,17 @@ if __name__ == '__main__':
         N2O_CO2EQV = N2O*298
         max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
         
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         
-        payoff_table["5"] = [min([(sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        payoff_table["5"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         
-        min_NPV = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        min_NPV = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         print(min_NPV)
         
         min_npv = min_npv + [min_NPV]
 
     range_inc_npv = {'min_NPV': payoff_table["5"][2],'max_NPV': payoff_table["4"][2],'max_INC': payoff_table["1"][0] ,'min_PEAT': payoff_table["4"][1],'max_PEAT': payoff_table["2"][1] }
-    #range_inc_npv = {'min_NPV': min_npv,'max_NPV': max_npv,'max_INC': max_inc ,'min_PEAT': min_PEAT,'max_PEAT': max_PEAT }
     range_inc_npv = pd.DataFrame(data=range_inc_npv, index = kk)
     print(range_inc_npv)
     print(payoff_table)
@@ -629,13 +594,11 @@ if __name__ == '__main__':
         BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))")
         BM_CO2EQV = BM*0.5*(44/12)
         return t3.model1.BM_CO2_EQV == ((BM_CO2EQV))#-(t3.min_BM_total*0.5*(44/12)))/((t3.max_BM_total*0.5*(44/12))-(t3.min_BM_total*0.5*(44/12)))
-
     t3.model1.objBundle2 = Constraint(rule=objBM_CO2_EQV_rule)
-
     t3.model1.C_soil_CO2_EQV = Var(within=Reals)
-
+    
     #EMISSIONS IN CO2 EQV.
-
+    
     def objBM_C_soil_CO2_EQV_rule(model1):
         CS = eval("(sum((t3.Carbon_soil.loc[s,r,max(t3.years)]-t3.Carbon_soil.loc[s,'SA',max(t3.years)]) * t3.model1.X1[(s,r)] * (1-t3.PEAT.loc[s,r,max(t3.years)]) for (s,r) in t3.model1.index1))")
         CS_CO2EQV = CS*0.5*(44/12)
@@ -677,7 +640,7 @@ if __name__ == '__main__':
     #EMISSIONS IN CO2 EQV.
 
     def objEM_NPV_rule(model1):
-        NPV  = sum((t3.Harvested_V_log.loc[s,r,year]+t3.Harvested_V_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
         return t3.model1.NPV_value == NPV
 
     t3.model1.objEM_NPV_rule = Constraint(rule=objEM_NPV_rule)
@@ -707,19 +670,19 @@ if __name__ == '__main__':
     def limit_regimes(t1,reg_type,OPT):
         
         def INC_bounded_rule(model1,year):
-            INC2 = (sum((t1.Harvested_V_log.loc[s,r,year]+t1.Harvested_V_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)/t1.model1.max_INC_mut)
+            INC2 = (sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)/t1.model1.max_INC_mut)
             return INC2 >= t1.model1.DEC_inc
         
         def INC_bound_lower_rule(model1,year):
             INC = (t1.model1.max_INC_mut*t1.model1.flow_p_inc)
-            INC2 = sum((t1.Harvested_V_log.loc[s,r,year]+t1.Harvested_V_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+            INC2 = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
             return INC2 >= INC
         
         t1.model1.flow_p_npv = Param(default=1, mutable=True)
         
         def NPV_bound_lower_rule(model1):
-            NPV = ((t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)*t1.model1.flow_p_npv+t1.model1.min_NPV_mut)#/(t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)
-            NPV2  = (sum((t1.Harvested_V_log.loc[s,r,year]+t1.Harvested_V_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1))#/(t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)
+            NPV = ((t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)*t1.model1.flow_p_npv+t1.model1.min_NPV_mut)
+            NPV2  = (sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1))#/(t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)
             return NPV2 == NPV
         
         t1.model1.flow_p_PEAT = Param(default=1, mutable=True)
@@ -728,8 +691,8 @@ if __name__ == '__main__':
             PEAT = ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)
             PEAT2  = (-t1.model1.PEAT_CO2_EQV+t1.model1.BM_CO2_EQV)/(t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)
             #UPDATED NEXT TWO
-            PEAT = ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)#/(t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)
-            PEAT2  = (t1.model1.PEAT_CO2_EQV)#/(t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)
+            PEAT = ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)
+            PEAT2  = (t1.model1.PEAT_CO2_EQV)
             
             PEAT = -1*PEAT #/100
             PEAT2 = -1*PEAT2 #/100
@@ -778,8 +741,8 @@ if __name__ == '__main__':
         
         if OPT == "INC_PEAT":
             def outcome_rule(model1):
-                NPV = sum((t1.Harvested_V_log.loc[s,r,year]+t1.Harvested_V_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = -t1.model1.PEAT_CO2_EQV#+t1.model1.BM_CO2_EQV
+                NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                PEAT = -t1.model1.PEAT_CO2_EQV
                 return (t1.model1.DEC_inc)*(1-t1.model1.flow_p_OBJ)- t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.NPV_lower = Constraint(rule=NPV_bound_lower_rule)
@@ -787,8 +750,8 @@ if __name__ == '__main__':
             
         elif OPT == "NPV_INC":
             def outcome_rule(model1):
-                NPV = sum((t1.Harvested_V_log.loc[s,r,year]+t1.Harvested_V_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = -t1.model1.PEAT_CO2_EQV#+t1.model1.BM_CO2_EQV
+                NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                PEAT = -t1.model1.PEAT_CO2_EQV
                 return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*(t1.model1.DEC_inc)
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.PEAT_lower = Constraint(rule=PEAT_bound_lower_rule)
@@ -796,8 +759,8 @@ if __name__ == '__main__':
         
         elif OPT == "NPV_PEAT":
             def outcome_rule(model1):
-                NPV = sum((t1.Harvested_V_log.loc[s,r,year]+t1.Harvested_V_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = -t1.model1.PEAT_CO2_EQV#+t1.model1.BM_CO2_EQV
+                NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                PEAT = -t1.model1.PEAT_CO2_EQV
                 return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)-t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))#+0.00000001*t1.model1.DEC_inc
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.INC_lower = Constraint(t3.years,rule=INC_bound_lower_rule)
@@ -864,17 +827,15 @@ if __name__ == '__main__':
                     result_P1 = result.loc[(result.index.get_level_values('year') == 2016)]
                     result_P2 = result.loc[(result.index.get_level_values('year') == 2021)]
                     result_P10 = result.loc[(result.index.get_level_values('year') == max(t1.years))]
-                    NPV_X = sum((result['Harvested_V_log'] + result['Harvested_V_pulp']-result['DITCHMAINT'])/((1+rr)**(2.5+result['Y1']-2016)) * result['DEC'])+sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])
+                    NPV_X = sum((result['Income_log'] + result['Income_pulp']-result['DITCHMAINT'])/((1+rr)**(2.5+result['Y1']-2016)) * result['DEC'])+sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])
                     PV_X = sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])
-                    INC_X = min([sum((result.loc[(slice(None),slice(None),year),"Harvested_V_log"]+ result.loc[(slice(None),slice(None),year),'Harvested_V_pulp'])*result.loc[(slice(None),slice(None),year),'DEC']) for year in t1.years])
+                    INC_X = min([sum((result.loc[(slice(None),slice(None),year),"Income_log"]+ result.loc[(slice(None),slice(None),year),'Income_pulp'])*result.loc[(slice(None),slice(None),year),'DEC']) for year in t1.years])
                     CO2 = sum(result['CO2_MEAN']* result['DEC'])
                     N2O = sum(result['N2O_MEAN']* result['DEC'])
                     CH4 = sum(result['CH4_MEAN']* result['DEC'])
-                    
-                    
-                    NPV_X_ha = sum((result['Harvested_V_log'] + result['Harvested_V_pulp']-result['DITCHMAINT'])/((1+rr)**(2.5+result['Y1']-2016)) * result['DEC'])+sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])/sum(DATA1["AREA_ALL"])
+                    NPV_X_ha = sum((result['Income_log'] + result['Income_pulp']-result['DITCHMAINT'])/((1+rr)**(2.5+result['Y1']-2016)) * result['DEC'])+sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])/sum(DATA1["AREA_ALL"])
                     PV_X_ha = sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])/sum(DATA1["AREA_ALL"])
-                    INC_X_ha = min([sum((result.loc[(slice(None),slice(None),year),"Harvested_V_log"]+ result.loc[(slice(None),slice(None),year),'Harvested_V_pulp'])*result.loc[(slice(None),slice(None),year),'DEC']) for year in t1.years])/sum(result.loc[(slice(None),slice(None),2016.0),'AREA_ALL']*result.loc[(slice(None),slice(None),2016.0),'DEC'])
+                    INC_X_ha = min([sum((result.loc[(slice(None),slice(None),year),"Income_log"]+ result.loc[(slice(None),slice(None),year),'Income_pulp'])*result.loc[(slice(None),slice(None),year),'DEC']) for year in t1.years])/sum(result.loc[(slice(None),slice(None),2016.0),'AREA_ALL']*result.loc[(slice(None),slice(None),2016.0),'DEC'])
                     HARV_X = sum(result['H_V'] * result['DEC'])
                     HARV_X_ha = sum(result['H_V'] * result['DEC'])/sum(DATA1["AREA_ALL"])
                     HARV_X_log = sum(result['H_V_LOG'] * result['DEC'])
@@ -882,8 +843,8 @@ if __name__ == '__main__':
                     HARV_X_pulp = sum(result['H_V_PULP'] * result['DEC'])
                     HARV_X_ha_pulp = sum(result['H_V_PULP'] * result['DEC'])/sum(DATA1["AREA_ALL"])
                     data_only[flow_PEAT*1000+flow_OBJ]=[NPV_X,INC_X,-t1.model1.PEAT_CO2_EQV.value+t1.model1.BM_CO2_EQV.value,t1.model1.C_soil_CO2_EQV.value,t1.model1.BM_CO2_EQV.value,t1.model1.PEAT_CO2_EQV_100.value,NPV_X_ha,INC_X_ha,-t1.model1.PEAT_CO2_EQV.value+t1.model1.BM_CO2_EQV.value,t1.model1.DEC_inc.value*t1.model1.max_INC_mut.value,t1.model1.PEAT_CO2_EQV.value,t1.model1.BM_CO2_EQV.value,flow_PEAT,CO2,N2O,CH4,HARV_X,HARV_X_ha,HARV_X_log,HARV_X_ha_log,HARV_X_pulp,HARV_X_ha_pulp]
-                    Harv = [sum((result.loc[(result.index.get_level_values('year') == year)]['Harvested_V_log']+result.loc[(result.index.get_level_values('year') == year)]['Harvested_V_pulp']) * result.loc[(result.index.get_level_values('year') == year)]['DEC']) for year in t1.years]
-                    Harv_PEAT = [sum((result.loc[(result.index.get_level_values('year') == year)]['Harvested_V_log']+result.loc[(result.index.get_level_values('year') == year)]['Harvested_V_pulp']) * result.loc[(result.index.get_level_values('year') == year)]['DEC']*result.loc[(result.index.get_level_values('year') == year)]['PEAT']) for year in t1.years]
+                    Harv = [sum((result.loc[(result.index.get_level_values('year') == year)]['Income_log']+result.loc[(result.index.get_level_values('year') == year)]['Income_pulp']) * result.loc[(result.index.get_level_values('year') == year)]['DEC']) for year in t1.years]
+                    Harv_PEAT = [sum((result.loc[(result.index.get_level_values('year') == year)]['Income_log']+result.loc[(result.index.get_level_values('year') == year)]['Income_pulp']) * result.loc[(result.index.get_level_values('year') == year)]['DEC']*result.loc[(result.index.get_level_values('year') == year)]['PEAT']) for year in t1.years]
                     data_only_harv[flow_PEAT*1000+flow_OBJ] = Harv
                     data_only_harv_peat[flow_PEAT*1000+flow_OBJ] = Harv_PEAT
                     decs[flow_PEAT*1000+flow_OBJ] = b1 
