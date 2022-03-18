@@ -16,7 +16,8 @@ import random
 import copy
 import matplotlib.pyplot as plt
 import statistics as stat
-
+import matplotlib
+    
 #path = "/home/ubuntu/workspace/pyomo/"
 path = "/scratch/project_2000611/KYLE/AVO2/Files_for_optimization/"
 pyutilib.services.TempfileManager.tempdir = path
@@ -24,23 +25,22 @@ pyutilib.services.TempfileManager.tempdir = path
 path = "/scratch/project_2000611/KYLE/SpaFHy_manuscript/simulated_data/"
 path_output = "/scratch/project_2000611/KYLE/SpaFHy_manuscript/"
 
-
 if __name__ == '__main__':
-
     import argparse
     import multiprocessing as mp
     import glob
-    import pickle
     parser = argparse.ArgumentParser()
     parser.add_argument('--area', help='which region, Keski-Suomi, Pohjois-Pohjanmaa, Uusimaa ', type=str)
     parser.add_argument('--trade', help ='Is the tradeoff between INC_PEAT, NPV_PEAT, or PEAT_NPV', type=str)
     parser.add_argument('--constraint', help ='Is the constraint INC, PEAT or NPV', type=str)
+    parser.add_argument('--emmision_type', help ='Do you wish to prioritize solely biomass growth (BM), GHG emissions (GHG)or their combination (BM_GHG)', type=str)
     
     args = parser.parse_args()
     
     RG = args.area #"Keski-Suomi"
     trade_off = args.trade #"INC_PEAT"
     constraint = args.constraint #"NPV"
+    EMMISSIONS = args.emmision_type #"BM_GHG"
 
 
     class optimization:
@@ -183,20 +183,6 @@ if __name__ == '__main__':
                 return index
             self.model1.index1 = Set(dimen=2, initialize=index_rule)
             
-                                      
-                          
-                                         
-                                             
-                            
-                                                                         
-            
-                                      
-                          
-                                         
-                                             
-                            
-                                                                         
-            
             # Variables
             self.model1.X1 = Var(self.model1.index1, within=NonNegativeReals, bounds=(0,1), initialize=1)
             
@@ -209,96 +195,16 @@ if __name__ == '__main__':
                 row_sum = sum(model1.X1[(t,p)] for p in [x[1] for x in model1.index1 if x[0] == t])
                 return row_sum == 1
             self.model1.regime_limit = Constraint(self.model1.stands, rule=regime_rule)
-        
+            
         def solve(self):
             opt = SolverFactory('cbc')
             self.results = opt.solve(self.model1,tee=False)
-    
-                                          
-                                                  
-                                                                           
-        
-                            
-                                                      
-                                  
-                                            
-                                         
-                                                                                                                                                                                                                                      
-                                                 
-                                 
-                                          
-                                         
-                                                                                                                                                                                                                      
-                                                 
-                                 
-                                       
-                                         
-                                                                                                                                                                   
-                                                 
-                                 
-                 
-                                         
-                                                                                                                                                                                                   
-                                                 
-                                 
-                                                                        
-                      
-                         
-                                           
-                           
-                                      
-                                                                      
-                                                                              
-                                                               
-                                                
-                                                                                             
-                                              
-                                                                                              
-                                          
-                                                                                                         
-                                       
-                                                                                  
-                 
-                                                                          
-                                                        
-                                                      
-                                                                        
-                      
-                         
-                                           
-                         
-                                      
-                                                                      
-                                                                              
-                                                               
-                                                
-                                                                                             
-                                              
-                                                                                              
-                                          
-                                                                                                         
-                                       
-                                                                                  
-                 
-                                                                          
-                
-                                                           
-                   
-                                  
-                                                                                                             
-                                                                                                                 
-                 
-                                                                                                                          
-                                                 
-                 
 
     t2 = optimization()    
 
     t3 = copy.deepcopy(t2)
     str_t3 = "t3"
-    
-
-             
+                 
     print("Loaded problem")
     #CALCULATE MINIMUM AND MAXIMUM OF EACH CRITION WITHOUT CONSTRAINTS
     
@@ -376,24 +282,15 @@ if __name__ == '__main__':
     D1.set_index(["id","branching_group","year"],inplace=True)
     DATA['Y1']=D1['Y1']
 
-
     #CALCULATION MAX AND MIN
-
-                                               
-                                          
-        
-                           
     kk = ["NONE"]
     #t2 = optimization()
     str_t3 = "t3"
     
-    
     payoff_table = {}
-    
     
     #INITIAL DATA
     import sqlite3
-    
     name_convert = {"Keski-Suomi":"KS","Pohjois-Pohjanmaa":"PP","Uusimaa":"UU"}
     path1= "/scratch/project_2000611/KYLE/SpaFHy_manuscript/data"
     conn = sqlite3.connect(path1 +"/simulated_SPAFHY_"+name_convert[RG]+"_INIT.db")
@@ -415,37 +312,24 @@ if __name__ == '__main__':
         
         CH4_CO2EQV = CH4*25
         N2O_CO2EQV = N2O*298
-        max_PEAT  = BM_CO2EQV-(N2O_CO2EQV+CH4_CO2EQV+CO2)
-        
+        if EMMISSIONS == "BM":
+            max_PEAT = BM_CO2EQV
+        elif EMISSIONS == "GHG":
+            max_PEAT =(N2O_CO2EQV+CH4_CO2EQV+CO2)
+        else:
+            max_PEAT  = BM_CO2EQV-(N2O_CO2EQV+CH4_CO2EQV+CO2)     
         NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
         INC = min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years])
         
         return [INC, max_PEAT, NPV]
         
-    
     for k in kk:
         t3 = copy.deepcopy(t2)
         #Change objective to NPV
         t3.model1.del_component(t3.model1.OBJ)   
         #discount rate
         rr = 0.03
-        
-                                      
-                                                                                                 
-                               
-                                      
-                                                                                                 
-                               
-        
-                     
-                                      
-                                                                                         
-                       
-                                  
-                                                                                         
              
-        print("NO RESTRICTION")
-            
         t3.model1.DEC_inc = Var(within=NonNegativeReals)#, bounds=(0,1), initialize=1)
         
         def outcome_rule(model1):
@@ -459,26 +343,8 @@ if __name__ == '__main__':
         
         t3.solve()
                                     
-                                                                                                                                                        
-                                  
-                                                                                                                                                     
-                                                                                                                                                     
-                                                                                                                                                     
-            
-                           
-                            
-                                               
-        
-                                                                                                                                                                                                                                                                                                                                                                     
-        
         payoff_table["1"] = calc_values_min_max()
-                                         
-                    
-                      
-        
-        
-                                     
-        
+
         t3.model1.del_component(t3.model1.INC_bounded)   
         t3.model1.del_component(t3.model1.INC_bounded_index)   
         
@@ -499,55 +365,23 @@ if __name__ == '__main__':
             CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             CH4_CO2EQV = CH4*25
             N2O_CO2EQV = N2O*298
-            PEAT  = BM_CO2EQV-(N2O_CO2EQV+CH4_CO2EQV+CO2)
+            if EMISSIONS == "BM":
+                PEAT  = BM_CO2EQV
+            elif EMISSIONS == "GHG":
+                PEAT = (N2O_CO2EQV+CH4_CO2EQV+CO2)
+            else:
+                PEAT = EMISSIONS - (N2O_CO2EQV+CH4_CO2EQV+CO2)
             return PEAT
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
                         
         t3.solve()
-        
-                                    
-                                                                                                                                                        
-                                  
                                                                                                                                                      
-                                                                                                                                                     
-                                                                                                                                                     
-            
-                           
-                            
-                                               
-        
-                                                                                                                                                                                                                                                                                                                                                                     
-        
         payoff_table["2"] = calc_values_min_max()
         t3.model1.del_component(t3.model1.OBJ)   
-        
-                                 
-                                        
-                                                                                                                                                              
-                                      
-                                                                                                                                                   
-                                                                                                                                                   
-                                                                                                                                                   
-                               
-                                
-                                               
                        
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=minimize)
                         
         t3.solve()
-        
-                                    
-        
-                                                                                                                                                                
-                                  
-                                                                                                                                                     
-                                                                                                                                                     
-                                                                                                                                                     
-                           
-                            
-                                               
-        
-                                                                                                                                                                                                                                                                                                                                                                     
         
         payoff_table["3"] = calc_values_min_max()
         
@@ -559,26 +393,8 @@ if __name__ == '__main__':
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
                         
         t3.solve()
-                                    
-                                                                                                                                                                
-                                  
-                                                                                                                                                     
-                                                                                                                                                     
-                                                                                                                                                     
-            
-                           
-                            
-                                               
         
         payoff_table["4"] = calc_values_min_max()
-        
-                                                                                                                                                                                                    
-        
-                                                                                                                                                                                                                                                                                                                                                                     
-        
-                                                                                                                                                                                                                                                                                                                                                                        
-                      
-                                     
         
         t3.model1.del_component(t3.model1.OBJ)   
         
@@ -588,37 +404,14 @@ if __name__ == '__main__':
         
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=minimize)
         t3.solve()
-                        
-                                    
-                                                                                                                                                                
-                                  
-                                                                                                                                                     
-                                                                                                                                                     
-                                                                                                                                                     
-                           
-                            
-                                                          
-        
-                                                                                                                                                                                                                                                                                                                                                                     
         
         payoff_table["5"] = calc_values_min_max()
     
-        
-                                                                                                                                                                                                                                                                                                                                                                        
-                      
-        
-                                     
-
     range_inc_npv = {'min_NPV': min(payoff_table["1"][2],payoff_table["2"][2],payoff_table["4"][2]),'max_NPV': max(payoff_table["1"][2],payoff_table["2"][2],payoff_table["4"][2]),    'max_INC': max(payoff_table["1"][0],payoff_table["2"][0],payoff_table["4"][0]),    'min_PEAT': min(payoff_table["1"][1],payoff_table["2"][1],payoff_table["4"][1]),    'max_PEAT': max(payoff_table["1"][1],payoff_table["2"][1],payoff_table["4"][1])}
     range_inc_npv = pd.DataFrame(data=range_inc_npv, index = kk)
     print(range_inc_npv)
     print(payoff_table)
     
-                                               
-                                                
-                                                
-                                               
-
     t3 = copy.deepcopy(t2)
     t3.model1.BM_CO2_EQV = Var(within=Reals)
     print("Creating new variables - for use in objective function")
@@ -649,7 +442,6 @@ if __name__ == '__main__':
     t3.model1.objBundle3 = Constraint(rule=objBM_C_soil_CO2_EQV_rule)
 
     t3.model1.PEAT_CO2_EQV = Var(within=Reals)
-    
                                 
     #EMISSIONS IN CO2 EQV.
 
@@ -717,31 +509,24 @@ if __name__ == '__main__':
             return INC2 >= t1.model1.DEC_inc
         
         def INC_bound_lower_rule(model1,year):
-                                                              
             return sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1) >= (t1.model1.max_INC_mut*t1.model1.flow_p_inc)
-                              
         
         t1.model1.flow_p_npv = Param(default=1, mutable=True)
         
         def NPV_bound_lower_rule(model1):
-                                                                                                            
             return (sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)) >= ((t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)*t1.model1.flow_p_npv+t1.model1.min_NPV_mut)
-                              
         
         t1.model1.flow_p_PEAT = Param(default=1, mutable=True)
         
-        def PEAT_bound_lower_rule(model1):
-                                                                                                                                                                 
-                                                                                                                   
-                             
-            return (t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV) >= ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)
-                                             
-            
-                                
-                                  
-                                
-        
-        
+        if EMISSIONS == "BM":
+            def PEAT_bound_lower_rule(model1):
+                return (t1.model1.BM_CO2_EQV) >= ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)                
+        elif EMISSIONS == "GHG":
+            def PEAT_bound_lower_rule(model1):
+                return (t1.model1.PEAT_CO2_EQV) <= ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)
+        else:
+            def PEAT_bound_lower_rule(model1):
+                return (t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV) >= ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)
         try:
             t1.model1.del_component(t1.model1.OBJ)   
         except:
@@ -757,18 +542,6 @@ if __name__ == '__main__':
             t1.model1.min_PEAT_mut = range_inc_npv.loc['NONE','min_PEAT']
             t1.model1.max_PEAT_mut = range_inc_npv.loc['NONE','max_PEAT']
                               
-                                                                     
-                                                                     
-                                                                     
-                                                                       
-                                                                       
-                              
-                                                                     
-                                                                     
-                                                                     
-                                                                       
-                                                                       
-        
         try:
             t1.model1.del_component(t1.model1.NPV_lower)    
         except:
@@ -783,28 +556,61 @@ if __name__ == '__main__':
             "Print NO INC_Lower"
         
         if OPT == "INC_PEAT":
-            def outcome_rule(model1):
-                NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
-                return (t1.model1.DEC_inc)*(1-t1.model1.flow_p_OBJ)+ t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
+            if EMISSIONS == "BM":
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.BM_CO2_EQV
+                    return (t1.model1.DEC_inc)*(1-t1.model1.flow_p_OBJ)+ t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
+            elif EMISSIONS == "GHG":
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.PEAT_CO2_EQV
+                    return (t1.model1.DEC_inc)*(1-t1.model1.flow_p_OBJ)- t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
+            else:
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
+                    return (t1.model1.DEC_inc)*(1-t1.model1.flow_p_OBJ)+ t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.NPV_lower = Constraint(rule=NPV_bound_lower_rule)
             t1.model1.INC_bounded = Constraint(t1.years,rule=INC_bounded_rule)
             
         elif OPT == "NPV_INC":
-            def outcome_rule(model1):
-                NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
-                return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*(t1.model1.DEC_inc)
+            if EMISSIONS == "BM":
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.BM_CO2_EQV
+                    return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*(t1.model1.DEC_inc)
+            elif EMISSIONS == "GHG":
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.PEAT_CO2_EQV
+                    return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*(t1.model1.DEC_inc)
+            else:
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
+                    return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*(t1.model1.DEC_inc)
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.PEAT_lower = Constraint(rule=PEAT_bound_lower_rule)
             t1.model1.INC_bounded = Constraint(t1.years,rule=INC_bounded_rule)
         
         elif OPT == "NPV_PEAT":
-            def outcome_rule(model1):
-                NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
-                return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
+            if EMISSIONS == "BM":
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.BM_CO2_EQV
+                    return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
+            elif EMISSIONS == "GHG":
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.PEAT_CO2_EQV
+                    return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
+            else:
+                def outcome_rule(model1):
+                    NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
+                    PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
+                    return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.INC_lower = Constraint(t3.years,rule=INC_bound_lower_rule)
         
@@ -819,29 +625,6 @@ if __name__ == '__main__':
         DEVEL_CLASS_EM = {}
         PEAT_EMISSIONS_PERIODIC ={}
         decs ={}
-        
-            
-                                                              
-               
-                        
-            
-                                                              
-               
-                        
-        
-                                      
-                                                                                                 
-                               
-                                      
-                                                                                                 
-                               
-        
-                            
-                                                                                         
-                              
-                                                                                         
-             
-                                   
         counter = 0
         t1.model1.flow_p_npv = 0
         t1.model1.flow_p_inc = 0
@@ -894,15 +677,11 @@ if __name__ == '__main__':
                     decs[flow_PEAT*1000+flow_OBJ] = b1 
         return data_only, data_only_harv, data_only_harv_peat, decs
     
-    import matplotlib
-    import numpy as np
-    
     data_only_ALL_NPV, data_only_harv_ALL_NPV, data_only_harv_peat_ALL_NPV, data_only_ALL_decs = limit_regimes(t3,"ALL",trade_off)
     data_all_pd_NPV = pd.DataFrame(data_only_ALL_NPV).transpose()
     data_all_pd_NPV.columns = ['ALL_NPV','ALL_INC','ALL_PEAT_CO2_EKV','ALL_C_Soil','ALL_BM_total','ALL_PEAT_CO2_EKV_RAND','NPV_X_ha','INC_X_ha','PEAT',"INC_DEC","PEAT_CO2","BM_CO2","const_flow","CO2","N2O","CH4","GWT","HARV_X","HARV_X_ha","HARV_X_LOG","HARV_X_ha_LOG","HARV_X_PULP","HARV_X_ha_PULP","BM_CO2_INV"] 
-    
-    data_all_pd_NPV.to_csv(path_output + "ALLNPV_DATA_2_"+constraint+"x"+RG+"_BM_GHG.csv")
+    data_all_pd_NPV.to_csv(path_output + "ALLNPV_DATA_2_"+constraint+"x"+RG+"_"+EMISSIONS+".csv")
     
     for k in data_only_ALL_decs.keys():
         data_only_ALL_decs[k]["ITER"]= k
-    pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())]).to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_BM_GHG.csv")
+    pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())]).to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+".csv")
