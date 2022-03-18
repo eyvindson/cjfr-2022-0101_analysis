@@ -51,8 +51,8 @@ if __name__ == '__main__':
             self.data_no = pd.read_csv(path + "rslt_GWT_w_SPAFHY_PEAT_"+RG+"_no.csv")
             #Yes to ditching
             self.data_yes = pd.read_csv(path + "rslt_GWT_w_SPAFHY_PEAT_"+RG+"_yes.csv")
-            #self.data_no.dropna(inplace = True)
-            #self.data_yes.dropna(inplace = True)
+                                                
+                                                 
             self.data_no = self.data_no[self.data_no['standid']>0]  
             self.data_yes = self.data_yes[self.data_yes['standid']>0]
             
@@ -77,7 +77,7 @@ if __name__ == '__main__':
             
             #If a subset is desired, change "/1" to "/10"
             n = int(len(set(self.data["id"].values))/1)
-            self.stand_sample = list(set(self.data["id"].values))[0:int(n/1)]
+            self.stand_sample = list(set(self.data["id"].values))[0:int(n)]
             self.data = self.data[self.data["id"].isin(self.stand_sample)]
             self.data["ALT"] = ["SC" if x[0:4] == "Sele" else "FC" if x[0:4] == "Norm" else "SA" for x in self.data['branching_group']]
             self.data['cost'] = self.data['cash_flow'].where(self.data['cash_flow'] < 0, other=0)
@@ -109,6 +109,7 @@ if __name__ == '__main__':
             self.N2O_MEAN =self.data.loc[(slice(None),slice(None),slice(None)),["N2O"+str(i) for i in range(2000,2016)]].mean(axis=1)*self.AREA_ALL*10*5
             self.CH4_MEAN =self.data.loc[(slice(None),slice(None),slice(None)),["CH4"+str(i) for i in range(2000,2016)]].mean(axis=1)*self.AREA_ALL*10*5
             self.CO2_MEAN =self.data.loc[(slice(None),slice(None),slice(None)),["CO2"+str(i) for i in range(2000,2016)]].mean(axis=1)*self.AREA_ALL*10*5
+            self.GWT_MEAN =self.data.loc[(slice(None),slice(None),slice(None)),["GWT"+str(i) for i in range(2000,2016)]].mean(axis=1)*self.AREA_ALL*10*5
             
             self.Income_log = self.data.loc[(slice(None),slice(None),slice(None)),"income_log_change"]*self.AREA_ALL
             self.Income_pulp = self.data.loc[(slice(None),slice(None),slice(None)),"income_pulp_change"]*self.AREA_ALL
@@ -182,19 +183,19 @@ if __name__ == '__main__':
                 return index
             self.model1.index1 = Set(dimen=2, initialize=index_rule)
             
-            def index_rule_FC(model1):
-                index = []
-                for i in self.t1FC.index:
-                    index.append((i[0],i[1]))
-                return index
-            self.model1.index1FC = Set(dimen=2, initialize=index_rule_FC)
+                                      
+                          
+                                         
+                                             
+                            
+                                                                         
             
-            def index_rule_SC(model1):
-                index = []
-                for i in self.t1SC.index:
-                    index.append((i[0],i[1]))
-                return index
-            self.model1.index1SC = Set(dimen=2, initialize=index_rule_SC)
+                                      
+                          
+                                         
+                                             
+                            
+                                                                         
             
             # Variables
             self.model1.X1 = Var(self.model1.index1, within=NonNegativeReals, bounds=(0,1), initialize=1)
@@ -212,95 +213,95 @@ if __name__ == '__main__':
         def solve(self):
             opt = SolverFactory('cbc')
             self.results = opt.solve(self.model1,tee=False)
-
-    def CALC_MIN_MAX(t3,t3str,name,DATA2):
-        f = open(path + "FOR_r_"+name+".txt", "w")
-        MF_var = ["N2O","CO2","CH4","Carbon_soil","BM_total","Harvested_V"]
+    
+                                          
+                                                  
+                                                                           
         
-        for VAR_i in MF_var:
-            t3.model1.del_component(t3.model1.OBJ)    
-            # Define the objective
-            if VAR_i in ["N2O","CO2","CH4"]:
-                def outcome_rule(model1):
-                    value = str("sum("+str(t3str)+"."+VAR_i+"_MEAN.loc[s,r,year] * "+str(t3str)+".model1.X1[(s,r)] * "+str(t3str) + ".PEAT.loc[s,r,year] for (s,r) in "+str(t3str)+".model1.index1 for year in "+str(t3str)+".years)")
-                    setattr(t3,"out",eval(value))
-                    return t3.out
-            elif VAR_i in ["Carbon_soil"]:
-                def outcome_rule(model1):
-                    value = str("sum("+str(t3str)+"."+VAR_i+".loc[s,r,max(t3.years)] * "+str(t3str)+".model1.X1[(s,r)] * (1-"+str(t3str) + ".PEAT.loc[s,r,max(t3.years)]) for (s,r) in "+str(t3str)+".model1.index1)")
-                    setattr(t3,"out",eval(value))
-                    return t3.out
-            elif VAR_i in ["BM_total"]:
-                def outcome_rule(model1):
-                    value = str("sum("+str(t3str)+"."+VAR_i+".loc[s,r,max(t3.years)] * "+str(t3str)+".model1.X1[(s,r)] for (s,r) in "+str(t3str)+".model1.index1)")
-                    setattr(t3,"out",eval(value))
-                    return t3.out
-            else:
-                def outcome_rule(model1):
-                    value = value = str("sum("+str(t3str)+"."+VAR_i+".loc[s,r,year] * "+str(t3str)+".model1.X1[(s,r)] for (s,r) in "+str(t3str)+".model1.index1 for year in "+str(t3str)+".years)")
-                    setattr(t3,"out",eval(value))
-                    return t3.out
-            t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
-            t3.solve()
-            DATA1 = DATA2
-            b1 = pd.DataFrame(t3.model1.X1)
-            b1["Dec"] = 0.0
-            for l in range(0,len(b1)):
-                b1["Dec"][l] = t3.model1.X1[(b1[0][l],b1[1][l])].value
-            b1 = b1.rename(columns = {0:"id",1:"branching_group","Dec":"DEC"})
-            b1.set_index(["id","branching_group"],inplace=True)
-            result = DATA1.join(b1, how='inner')
-            result_P10 = result.loc[(result.index.get_level_values('year') == max(t3.years))]
-            if VAR_i in ["N2O","CO2","CH4"]:  
-                value_VAR_i = "sum((result['"+VAR_i+"_MEAN']*result['PEAT']) * result['DEC'])"
-            elif VAR_i in ["Carbon_soil"]:
-                value_VAR_i = "sum((result_P10['"+VAR_i+"']*(1-result_P10['PEAT'])) * result_P10['DEC'])"
-            elif VAR_i in ["BM_total"]:
-                value_VAR_i = "sum((result_P10['"+VAR_i+"']) * result_P10['DEC'])"
-            else:
-                value_VAR_i = "sum((result['"+VAR_i+"']) * result['DEC'])"
-            setattr(t3,"max_"+VAR_i, eval(value_VAR_i ))
-            t3.model1.del_component(t3.model1.OBJ)    
-            t3.model1.OBJ = Objective(rule=outcome_rule, sense=minimize)
-            t3.solve()
-            DATA1 = DATA2
-            b1 = pd.DataFrame(t3.model1.X1)
-            b1["Dec"] = 0
-            for l in range(0,len(b1)):
-                b1["Dec"][l] = t3.model1.X1[(b1[0][l],b1[1][l])].value
-            b1 = b1.rename(columns = {0:"id",1:"branching_group","Dec":"DEC"})
-            b1.set_index(["id","branching_group"],inplace=True)
-            result = DATA1.join(b1, how='inner')
-            result_P10 = result.loc[(result.index.get_level_values('year') == max(t3.years))]
-            if VAR_i in ["N2O","CO2","CH4"]:  
-                value_VAR_i = "sum((result['"+VAR_i+"_MEAN']*result['PEAT']) * result['DEC'])"
-            elif VAR_i in ["Carbon_soil"]:
-                value_VAR_i = "sum((result_P10['"+VAR_i+"']*(1-result_P10['PEAT'])) * result_P10['DEC'])"
-            elif VAR_i in ["BM_total"]:
-                value_VAR_i = "sum((result_P10['"+VAR_i+"']) * result_P10['DEC'])"
-            else:
-                value_VAR_i = "sum((result['"+VAR_i+"']) * result['DEC'])"
-            try:
-                setattr(t3,"min_"+VAR_i, eval(value_VAR_i))
-            except:
-                print(value_VAR_i)
-            print("mm"+str(VAR_i)+"<-c("+str(getattr(t3,"max_"+VAR_i))+","+str(getattr(t3,"min_"+VAR_i))+")")
-            f.write("mm"+str(VAR_i)+"<-c("+str(getattr(t3,"max_"+VAR_i))+","+str(getattr(t3,"min_"+VAR_i))+")\r")
-        f.close()
-        d = {'min': [getattr(t3,"min_"+VAR_i) for VAR_i in MF_var], 'min': [getattr(t3,"max_"+VAR_i) for VAR_i in MF_var]}
-        df = pd.DataFrame(data=d, index = MF_var)
-        return df
+                            
+                                                      
+                                  
+                                            
+                                         
+                                                                                                                                                                                                                                      
+                                                 
+                                 
+                                          
+                                         
+                                                                                                                                                                                                                      
+                                                 
+                                 
+                                       
+                                         
+                                                                                                                                                                   
+                                                 
+                                 
+                 
+                                         
+                                                                                                                                                                                                   
+                                                 
+                                 
+                                                                        
+                      
+                         
+                                           
+                           
+                                      
+                                                                      
+                                                                              
+                                                               
+                                                
+                                                                                             
+                                              
+                                                                                              
+                                          
+                                                                                                         
+                                       
+                                                                                  
+                 
+                                                                          
+                                                        
+                                                      
+                                                                        
+                      
+                         
+                                           
+                         
+                                      
+                                                                      
+                                                                              
+                                                               
+                                                
+                                                                                             
+                                              
+                                                                                              
+                                          
+                                                                                                         
+                                       
+                                                                                  
+                 
+                                                                          
+                
+                                                           
+                   
+                                  
+                                                                                                             
+                                                                                                                 
+                 
+                                                                                                                          
+                                                 
+                 
 
     t2 = optimization()    
 
     t3 = copy.deepcopy(t2)
     str_t3 = "t3"
-    calc_MAX = 0
+    
 
-    print(t3)
+             
     print("Loaded problem")
     #CALCULATE MINIMUM AND MAXIMUM OF EACH CRITION WITHOUT CONSTRAINTS
-
+    
     #This section of code allows for array multiplication -- faster than loops.
     DATA = t3.Income_log+t3.Income_pulp-t3.DITCHMAINT
     DATA = pd.DataFrame(DATA)
@@ -314,7 +315,7 @@ if __name__ == '__main__':
     Income_pulp = t3.Income_pulp
     Income_pulp = pd.DataFrame(Income_pulp)
     DATA["Income_pulp"]= Income_pulp[0]
-
+    
     H_V_LOG = t3.H_V_LOG
     H_V_LOG = pd.DataFrame(H_V_LOG)
     DATA["H_V_LOG"]= H_V_LOG[0]
@@ -324,7 +325,7 @@ if __name__ == '__main__':
     H_V = t3.H_V
     H_V = pd.DataFrame(H_V)
     DATA["H_V"]= H_V[0]
-
+    
     DITCHMAINT = t3.DITCHMAINT
     DITCHMAINT = pd.DataFrame(DITCHMAINT)
     DATA["DITCHMAINT"] = DITCHMAINT[0]
@@ -334,7 +335,7 @@ if __name__ == '__main__':
     PV = t3.PV
     PV = pd.DataFrame(PV)
     DATA["PV"]= PV[0]
-
+    
     N2O = t3.N2O
     N2O = pd.DataFrame(N2O)
     DATA["N2O"]= N2O[0]
@@ -362,10 +363,13 @@ if __name__ == '__main__':
     N2O_MEAN = pd.DataFrame(N2O_MEAN)
     CO2_MEAN = t3.CO2_MEAN
     CO2_MEAN = pd.DataFrame(CO2_MEAN)
+    GWT_MEAN = t3.GWT_MEAN
+    GWT_MEAN = pd.DataFrame(GWT_MEAN)
     DATA["CO2_MEAN"] = CO2_MEAN[0]
     DATA["CH4_MEAN"] = CH4_MEAN[0]
     DATA["N2O_MEAN"] = N2O_MEAN[0]
-
+    DATA["GWT_MEAN"] = GWT_MEAN[0]
+    
     D1 = DATA
     D1 = D1.reset_index()
     D1['Y1']= D1['year']
@@ -375,21 +379,50 @@ if __name__ == '__main__':
 
     #CALCULATION MAX AND MIN
 
-    min_max = CALC_MIN_MAX(t3,"t3","TEST",DATA)
-    print("Calculated Max and Min values")
+                                               
+                                          
         
-    kk = ["FC","SC","NONE"]
+                           
     kk = ["NONE"]
     #t2 = optimization()
     str_t3 = "t3"
-
-    NO_CF_SC = [[0,0],[0,0],[0,0]]
-
-    max_inc = []
-    max_npv = []
-    min_npv = []
-        
+    
+    
     payoff_table = {}
+    
+    
+    #INITIAL DATA
+    import sqlite3
+    
+    name_convert = {"Keski-Suomi":"KS","Pohjois-Pohjanmaa":"PP","Uusimaa":"UU"}
+    path1= "/scratch/project_2000611/KYLE/SpaFHy_manuscript/data"
+    conn = sqlite3.connect(path1 +"/simulated_SPAFHY_"+name_convert[RG]+"_INIT.db")
+    c = conn.cursor()
+    
+    CREATE_TABLE = 'SELECT u.*,  (select max(stratum.H_dom) From stratum where stratum.data_id = u.data_id)              as H_dom,  (select max(stratum.D_gm)  From stratum where stratum.data_id = u.data_id)              as D_gm,  (select sum(stratum.N)     From stratum where stratum.data_id = u.data_id and D_gm >40) as N_where_D_gt_40, (select sum(stratum.N)     From stratum where stratum.data_id = u.data_id and D_gm <=40 and D_gm > 35) as N_where_D_gt_35_lt_40, (select sum(stratum.N)     From stratum where stratum.data_id = u.data_id and D_gm <=35 and D_gm > 30) as N_where_D_gt_30_lt_35, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and D_gm >40) as V_where_D_gt_40, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and D_gm <=40 and D_gm > 35) as V_where_D_gt_35_lt_40, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and D_gm <=35 and D_gm > 30) as V_where_D_gt_30_lt_35, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and SP = 5) as V_populus, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and SP = 6) as V_Alnus_incana, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and SP = 7) as V_Alnus_glutinosa, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and SP = 8) as V_o_coniferous, (select sum(stratum.V)     From stratum where stratum.data_id = u.data_id and SP = 9) as V_o_decidious, (select sum(stratum.i_vm3) From stratum where stratum.data_id = u.data_id) as i_Vm3,  (select sum(age*v)/sum(v) from stratum where stratum.data_id = u.data_id) as AGE_vol, (select sum(age*ba)/sum(ba) from stratum where stratum.data_id = u.data_id) as AGE_ba,  l.data_date,  b.branch,  b.branch_desc,  b.branching_group,  0 as income,  0 as cash_flow,   0 as clearcut,  0 as Harvested_V_log,  0 as Harvested_V_pulp,   0 as Harvested_V,   0 as Biomass_ton, 0 as Harvested_V_pulp_under_bark, 0 as Harvested_V_log_under_bark, 0 as income_log,  0 as income_pulp, 0 as income_log_change,   0 as income_pulp_change,  0 as income_biomass,  0 as Biomass,  0 as THIN                        FROM comp_unit u, data_link l left outer join branch_desc b on l.branch = b.branch and l.id = b.id  WHERE u.data_id=l.data_id  ORDER BY u.id, l.branch, l.data_date' 
+    init_stand = pd.read_sql(CREATE_TABLE, conn)
+    init_stand['id'] = init_stand['id'].astype(int)
+    init_stand = init_stand[init_stand['id'].isin(set(DATA.index.get_level_values(0)))]
+            
+    BM_STOCK_INITIAL = (init_stand['BM_total']*init_stand['AREA']).sum()
+    
+    def calc_values_min_max():
+        BM = (sum((t3.BM_total.loc[s,r,max(t3.years)])* t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)-BM_STOCK_INITIAL)
+        BM_CO2EQV = BM*0.5*(44/12)
+        CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
+        N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
+        CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
+        
+        CH4_CO2EQV = CH4*25
+        N2O_CO2EQV = N2O*298
+        max_PEAT  = BM_CO2EQV-(N2O_CO2EQV+CH4_CO2EQV+CO2)
+        
+        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        INC = min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years])
+        
+        return [INC, max_PEAT, NPV]
+        
+    
     for k in kk:
         t3 = copy.deepcopy(t2)
         #Change objective to NPV
@@ -397,21 +430,21 @@ if __name__ == '__main__':
         #discount rate
         rr = 0.03
         
-        def regime_rule_SC(model1, t):
-            row_sum = sum(model1.X1[(t,p)] for p in [x[1] for x in model1.index1SC if x[0] == t])
-            return row_sum == 1
-        def regime_rule_FC(model1, t):
-            row_sum = sum(model1.X1[(t,p)] for p in [x[1] for x in model1.index1FC if x[0] == t])
-            return row_sum == 1
+                                      
+                                                                                                 
+                               
+                                      
+                                                                                                 
+                               
         
-        if k == "SC":
-            print("SELECTION HARVEST")
-            t3.model1.regime_limit_SC = Constraint(t3.model1.stands, rule=regime_rule_SC)
-        elif k == "FC":
-            print("CLEAR FELLING")
-            t3.model1.regime_limit_FC = Constraint(t3.model1.stands, rule=regime_rule_FC)
-        else:
-            print("NO RESTRICTION")
+                     
+                                      
+                                                                                         
+                       
+                                  
+                                                                                         
+             
+        print("NO RESTRICTION")
             
         t3.model1.DEC_inc = Var(within=NonNegativeReals)#, bounds=(0,1), initialize=1)
         
@@ -425,26 +458,26 @@ if __name__ == '__main__':
         t3.model1.INC_bounded = Constraint(t3.years,rule=INC_bounded_rule)    
         
         t3.solve()
-        EM_VAR = ["CH4","N2O","CO2"]
-        BM = (sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1))
-        BM_CO2EQV = BM*0.5*(44/12)
-        CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
+                                    
+                                                                                                                                                        
+                                  
+                                                                                                                                                     
+                                                                                                                                                     
+                                                                                                                                                     
             
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
+                           
+                            
+                                               
         
-        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+                                                                                                                                                                                                                                                                                                                                                                     
         
-        payoff_table["1"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
-        max_INC = t3.model1.DEC_inc.value
-        print("NEW")
-        print(max_INC)
+        payoff_table["1"] = calc_values_min_max()
+                                         
+                    
+                      
         
         
-        max_inc = max_inc + [max_INC]
+                                     
         
         t3.model1.del_component(t3.model1.INC_bounded)   
         t3.model1.del_component(t3.model1.INC_bounded_index)   
@@ -457,65 +490,66 @@ if __name__ == '__main__':
         t3.model1.del_component(t3.model1.OBJ)   
         
         def outcome_rule(model1):
-            EM_VAR = ["CH4","N2O","CO2"]
-            BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))")
+                                        
+            #BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))")
+            BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)])* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))-BM_STOCK_INITIAL")
             BM_CO2EQV = BM*0.5*(44/12)
             CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             CH4_CO2EQV = CH4*25
             N2O_CO2EQV = N2O*298
-            PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
+            PEAT  = BM_CO2EQV-(N2O_CO2EQV+CH4_CO2EQV+CO2)
             return PEAT
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
-        print("MAX GHG")
+                        
         t3.solve()
         
-        EM_VAR = ["CH4","N2O","CO2"]
-        BM = (sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1))
-        BM_CO2EQV = BM*0.5*(44/12)
-        CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
+                                    
+                                                                                                                                                        
+                                  
+                                                                                                                                                     
+                                                                                                                                                     
+                                                                                                                                                     
             
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
+                           
+                            
+                                               
         
-        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+                                                                                                                                                                                                                                                                                                                                                                     
         
-        payoff_table["2"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
+        payoff_table["2"] = calc_values_min_max()
         t3.model1.del_component(t3.model1.OBJ)   
         
-        def outcome_rule(model1):
-            EM_VAR = ["CH4","N2O","CO2"]
-            BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))")
-            BM_CO2EQV = BM*0.5*(44/12)
-            CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-            N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-            CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-            CH4_CO2EQV = CH4*25
-            N2O_CO2EQV = N2O*298
-            PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
-            return PEAT
+                                 
+                                        
+                                                                                                                                                              
+                                      
+                                                                                                                                                   
+                                                                                                                                                   
+                                                                                                                                                   
+                               
+                                
+                                               
+                       
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=minimize)
-        print("Min GHG")
+                        
         t3.solve()
         
-        EM_VAR = ["CH4","N2O","CO2"]
+                                    
         
-        BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1))")
-        BM_CO2EQV = BM*0.5*(44/12)
-        CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
+                                                                                                                                                                
+                                  
+                                                                                                                                                     
+                                                                                                                                                     
+                                                                                                                                                     
+                           
+                            
+                                               
         
-        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+                                                                                                                                                                                                                                                                                                                                                                     
         
-        payoff_table["3"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]    
+        payoff_table["3"] = calc_values_min_max()
         
         t3.model1.del_component(t3.model1.OBJ)   
         
@@ -523,28 +557,28 @@ if __name__ == '__main__':
             NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
             return NPV
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
-        print("MAX NPV")
+                        
         t3.solve()
-        EM_VAR = ["CH4","N2O","CO2"]
-        BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1))")
-        BM_CO2EQV = BM*0.5*(44/12)
-        CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
+                                    
+                                                                                                                                                                
+                                  
+                                                                                                                                                     
+                                                                                                                                                     
+                                                                                                                                                     
             
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)
+                           
+                            
+                                               
         
-        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        payoff_table["4"] = calc_values_min_max()
         
-        payoff_table["4"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
+                                                                                                                                                                                                    
         
-        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+                                                                                                                                                                                                                                                                                                                                                                     
         
-        max_NPV = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
-        print(max_NPV)
-        max_npv = max_npv + [max_NPV]
+                                                                                                                                                                                                                                                                                                                                                                        
+                      
+                                     
         
         t3.model1.del_component(t3.model1.OBJ)   
         
@@ -554,47 +588,55 @@ if __name__ == '__main__':
         
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=minimize)
         t3.solve()
-        print("Min GHG")
-        EM_VAR = ["CH4","N2O","CO2"]
-        BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1))")
-        BM_CO2EQV = BM*0.5*(44/12)
-        CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298
-        max_PEAT  = (N2O_CO2EQV+CH4_CO2EQV+CO2)#+BM_CO2EQV
+                        
+                                    
+                                                                                                                                                                
+                                  
+                                                                                                                                                     
+                                                                                                                                                     
+                                                                                                                                                     
+                           
+                            
+                                                          
         
-        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+                                                                                                                                                                                                                                                                                                                                                                     
         
-        payoff_table["5"] = [min([(sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)) for year in t3.years]), max_PEAT, NPV]
-        NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
+        payoff_table["5"] = calc_values_min_max()
+    
         
-        min_NPV = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)].value for (s,r) in t3.model1.index1)
-        print(min_NPV)
+                                                                                                                                                                                                                                                                                                                                                                        
+                      
         
-        min_npv = min_npv + [min_NPV]
+                                     
 
-    range_inc_npv = {'min_NPV': payoff_table["5"][2],'max_NPV': payoff_table["4"][2],'max_INC': payoff_table["1"][0] ,'min_PEAT': payoff_table["4"][1],'max_PEAT': payoff_table["2"][1] }
+    range_inc_npv = {'min_NPV': min(payoff_table["1"][2],payoff_table["2"][2],payoff_table["4"][2]),'max_NPV': max(payoff_table["1"][2],payoff_table["2"][2],payoff_table["4"][2]),    'max_INC': max(payoff_table["1"][0],payoff_table["2"][0],payoff_table["4"][0]),    'min_PEAT': min(payoff_table["1"][1],payoff_table["2"][1],payoff_table["4"][1]),    'max_PEAT': max(payoff_table["1"][1],payoff_table["2"][1],payoff_table["4"][1])}
     range_inc_npv = pd.DataFrame(data=range_inc_npv, index = kk)
     print(range_inc_npv)
     print(payoff_table)
-    setattr(t3,"min_NPV", payoff_table["5"][2])
-    setattr(t3,"max_INC", payoff_table["1"][0])
-    setattr(t3,"max_PEAT", payoff_table["2"][1])
-    setattr(t3,"min_PEAT", payoff_table["4"][1])
-    setattr(t3,"max_NPV", payoff_table["4"][2])
+    
+                                               
+                                                
+                                                
+                                               
 
     t3 = copy.deepcopy(t2)
     t3.model1.BM_CO2_EQV = Var(within=Reals)
     print("Creating new variables - for use in objective function")
     #EMISSIONS IN CO2 EQV.
-
+    
     def objBM_CO2_EQV_rule(model1):
-        BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))")
+        BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))-BM_STOCK_INITIAL")
         BM_CO2EQV = BM*0.5*(44/12)
         return t3.model1.BM_CO2_EQV == ((BM_CO2EQV))#-(t3.min_BM_total*0.5*(44/12)))/((t3.max_BM_total*0.5*(44/12))-(t3.min_BM_total*0.5*(44/12)))
     t3.model1.objBundle2 = Constraint(rule=objBM_CO2_EQV_rule)
+    
+    t3.model1.BM_CO2_EQV_INV = Var(within=Reals)
+    
+    def objBM_CO2_EQV_rule_INV(model1):
+        BM = eval("(sum((t3.BM_total.loc[s,r,max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1))-BM_STOCK_INITIAL")
+        BM_CO2EQV = BM*0.5*(44/12)
+        return t3.model1.BM_CO2_EQV_INV == ((BM_CO2EQV))
+    t3.model1.objBundle2b = Constraint(rule=objBM_CO2_EQV_rule_INV)
     t3.model1.C_soil_CO2_EQV = Var(within=Reals)
     
     #EMISSIONS IN CO2 EQV.
@@ -603,12 +645,12 @@ if __name__ == '__main__':
         CS = eval("(sum((t3.Carbon_soil.loc[s,r,max(t3.years)]-t3.Carbon_soil.loc[s,'SA',max(t3.years)]) * t3.model1.X1[(s,r)] * (1-t3.PEAT.loc[s,r,max(t3.years)]) for (s,r) in t3.model1.index1))")
         CS_CO2EQV = CS*0.5*(44/12)
         return t3.model1.C_soil_CO2_EQV == ((CS_CO2EQV))#-(t3.min_Carbon_soil*0.5*(44/12)))/((t3.max_Carbon_soil*0.5*(44/12))-(t3.min_Carbon_soil*0.5*(44/12)))
-
+    
     t3.model1.objBundle3 = Constraint(rule=objBM_C_soil_CO2_EQV_rule)
 
     t3.model1.PEAT_CO2_EQV = Var(within=Reals)
-
-    EM_VAR = ["CH4","N2O","CO2"]
+    
+                                
     #EMISSIONS IN CO2 EQV.
 
     def objEM_CO2_EQV_rule(model1):
@@ -618,13 +660,13 @@ if __name__ == '__main__':
         CH4_CO2EQV = CH4*25
         N2O_CO2EQV = N2O*298 
         return t3.model1.PEAT_CO2_EQV == ((CH4_CO2EQV + N2O_CO2EQV+CO2))
-
+    
     t3.model1.objBundle4 = Constraint(rule=objEM_CO2_EQV_rule)
 
     t3.model1.PEAT_CO2_EQV_100 = Var(within=Reals)
 
     #EMISSIONS IN CO2 EQV.
-
+    
     def objEM_CO2_EQV_rule_stoch(model1):
         CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
@@ -636,28 +678,29 @@ if __name__ == '__main__':
     t3.model1.objBundle5 = Constraint(rule=objEM_CO2_EQV_rule_stoch)
 
     t3.model1.NPV_value = Var(within=Reals)
-
+    
     #EMISSIONS IN CO2 EQV.
-
+    
     def objEM_NPV_rule(model1):
         NPV  = sum((t3.Income_log.loc[s,r,year]+t3.Income_pulp.loc[s,r,year]-t3.DITCHMAINT.loc[s,r,year]-t3.COSTS.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1 for year in t3.years)+sum(t3.PV.loc[s,r,max(t3.years)]/((1+rr)**(max(t3.years)-2016)) * t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)
         return t3.model1.NPV_value == NPV
-
+    
     t3.model1.objEM_NPV_rule = Constraint(rule=objEM_NPV_rule)
     t3.model1.INC_value = Var(within=Reals)
     t3.model1.BM_CO2_EQV_100 = Var(within=Reals)
-
+    
     #EMISSIONS IN CO2 EQV.
-
+    
     def objBM_CO2_EQV_rule_stoch(model1):
-        BM = eval("(sum([sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)]))")
+        #BM = eval("(sum([sum((t3.BM_total.loc[s,r,max(t3.years)]-t3.BM_total.loc[s,'SA',max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)]))")
+        BM = eval("(sum([sum((t3.BM_total.loc[s,r,max(t3.years)] )* t3.model1.X1[(s,r)] for (s,r) in t3.model1.index1)-BM_STOCK_INITIAL]))")
         BM_CO2EQV_100 = BM*0.5*(44/12)
         return t3.model1.BM_CO2_EQV_100 == ((BM_CO2EQV_100))#-(t3.min_BM_total*0.5*(44/12)))/((t3.max_BM_total*0.5*(44/12))-(t3.min_BM_total*0.5*(44/12)))
-
+    
     t3.model1.objBundle6 = Constraint(rule=objBM_CO2_EQV_rule_stoch)
-
+    
     print("Created new variables")
-
+    
     t3.model1.flow_p_inc = Param(default=1, mutable=True)
     t3.model1.max_INC_mut = Param(default=1, mutable=True)
     t3.model1.max_NPV_mut = Param(default=1, mutable=True)
@@ -666,7 +709,7 @@ if __name__ == '__main__':
     t3.model1.min_PEAT_mut = Param(default=1, mutable=True)
     t3.model1.flow_p_OBJ = Param(default=1, mutable=True)
     t3.model1.DEC_inc = Var(within=NonNegativeReals, bounds=(0,1), initialize=1)
-
+    
     def limit_regimes(t1,reg_type,OPT):
         
         def INC_bounded_rule(model1,year):
@@ -674,29 +717,29 @@ if __name__ == '__main__':
             return INC2 >= t1.model1.DEC_inc
         
         def INC_bound_lower_rule(model1,year):
-            INC = (t1.model1.max_INC_mut*t1.model1.flow_p_inc)
-            INC2 = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-            return INC2 >= INC
+                                                              
+            return sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1) >= (t1.model1.max_INC_mut*t1.model1.flow_p_inc)
+                              
         
         t1.model1.flow_p_npv = Param(default=1, mutable=True)
         
         def NPV_bound_lower_rule(model1):
-            NPV = ((t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)*t1.model1.flow_p_npv+t1.model1.min_NPV_mut)
-            NPV2  = (sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1))#/(t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)
-            return NPV2 == NPV
+                                                                                                            
+            return (sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)) >= ((t1.model1.max_NPV_mut-t1.model1.min_NPV_mut)*t1.model1.flow_p_npv+t1.model1.min_NPV_mut)
+                              
         
         t1.model1.flow_p_PEAT = Param(default=1, mutable=True)
         
         def PEAT_bound_lower_rule(model1):
-            PEAT = ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)
-            PEAT2  = (-t1.model1.PEAT_CO2_EQV+t1.model1.BM_CO2_EQV)/(t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)
-            #UPDATED NEXT TWO
-            PEAT = ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)
-            PEAT2  = (t1.model1.PEAT_CO2_EQV)
+                                                                                                                                                                 
+                                                                                                                   
+                             
+            return (t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV) >= ((t1.model1.max_PEAT_mut-t1.model1.min_PEAT_mut)*t1.model1.flow_p_PEAT+t1.model1.min_PEAT_mut)
+                                             
             
-            PEAT = -1*PEAT #/100
-            PEAT2 = -1*PEAT2 #/100
-            return PEAT2 == PEAT
+                                
+                                  
+                                
         
         
         try:
@@ -713,18 +756,18 @@ if __name__ == '__main__':
             t1.model1.max_NPV_mut = range_inc_npv.loc['NONE','max_NPV']
             t1.model1.min_PEAT_mut = range_inc_npv.loc['NONE','min_PEAT']
             t1.model1.max_PEAT_mut = range_inc_npv.loc['NONE','max_PEAT']
-        elif reg_type == "FC":
-            t1.model1.max_INC_mut = range_inc_npv.loc['FC','max_INC']
-            t1.model1.min_NPV_mut = range_inc_npv.loc['FC','min_NPV']
-            t1.model1.max_NPV_mut = range_inc_npv.loc['FC','max_NPV']
-            t1.model1.min_PEAT_mut = range_inc_npv.loc['FC','min_PEAT']
-            t1.model1.max_PEAT_mut = range_inc_npv.loc['FC','max_PEAT']
-        elif reg_type == "SC":
-            t1.model1.max_INC_mut = range_inc_npv.loc['SC','max_INC']
-            t1.model1.min_NPV_mut = range_inc_npv.loc['SC','min_NPV']
-            t1.model1.max_NPV_mut = range_inc_npv.loc['SC','max_NPV']
-            t1.model1.min_PEAT_mut = range_inc_npv.loc['SC','min_PEAT']
-            t1.model1.max_PEAT_mut = range_inc_npv.loc['SC','max_PEAT']
+                              
+                                                                     
+                                                                     
+                                                                     
+                                                                       
+                                                                       
+                              
+                                                                     
+                                                                     
+                                                                     
+                                                                       
+                                                                       
         
         try:
             t1.model1.del_component(t1.model1.NPV_lower)    
@@ -742,8 +785,8 @@ if __name__ == '__main__':
         if OPT == "INC_PEAT":
             def outcome_rule(model1):
                 NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = -t1.model1.PEAT_CO2_EQV
-                return (t1.model1.DEC_inc)*(1-t1.model1.flow_p_OBJ)- t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
+                PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
+                return (t1.model1.DEC_inc)*(1-t1.model1.flow_p_OBJ)+ t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.NPV_lower = Constraint(rule=NPV_bound_lower_rule)
             t1.model1.INC_bounded = Constraint(t1.years,rule=INC_bounded_rule)
@@ -751,7 +794,7 @@ if __name__ == '__main__':
         elif OPT == "NPV_INC":
             def outcome_rule(model1):
                 NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = -t1.model1.PEAT_CO2_EQV
+                PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
                 return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*(t1.model1.DEC_inc)
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.PEAT_lower = Constraint(rule=PEAT_bound_lower_rule)
@@ -760,8 +803,8 @@ if __name__ == '__main__':
         elif OPT == "NPV_PEAT":
             def outcome_rule(model1):
                 NPV = sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]-t1.DITCHMAINT.loc[s,r,year])/((1+rr)**(2.5+year-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1 for year in t1.years)+sum(t1.PV.loc[s,r,max(t1.years)]/((1+rr)**(max(t1.years)-2016)) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)
-                PEAT = -t1.model1.PEAT_CO2_EQV
-                return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)-t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))#+0.00000001*t1.model1.DEC_inc
+                PEAT = t1.model1.BM_CO2_EQV-t1.model1.PEAT_CO2_EQV
+                return ((NPV-t1.model1.min_NPV_mut)/(t1.model1.max_NPV_mut- t1.model1.min_NPV_mut))*(1-t1.model1.flow_p_OBJ)+t1.model1.flow_p_OBJ*((PEAT-t1.model1.min_PEAT_mut)/(t1.model1.max_PEAT_mut- t1.model1.min_PEAT_mut))
             t1.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
             t1.model1.INC_lower = Constraint(t3.years,rule=INC_bound_lower_rule)
         
@@ -772,33 +815,33 @@ if __name__ == '__main__':
         land_use_peat={}
         EMISSIONS={}
         EMISSIONS_RR={}
-        EMISSIONS_RR
+        EMISSIONS_RR    
         DEVEL_CLASS_EM = {}
         PEAT_EMISSIONS_PERIODIC ={}
         decs ={}
         
-        try:
-            t1.model1.del_component(t1.model1.regime_limit_FC)
-        except:
-            print("OK*")
-        try:
-            t1.model1.del_component(t1.model1.regime_limit_SC)
-        except:
-            print("OK*")
+            
+                                                              
+               
+                        
+            
+                                                              
+               
+                        
         
-        def regime_rule_SC(model1, t):
-            row_sum = sum(model1.X1[(t,p)] for p in [x[1] for x in model1.index1SC if x[0] == t])
-            return row_sum == 1
-        def regime_rule_FC(model1, t):
-            row_sum = sum(model1.X1[(t,p)] for p in [x[1] for x in model1.index1FC if x[0] == t])
-            return row_sum == 1
+                                      
+                                                                                                 
+                               
+                                      
+                                                                                                 
+                               
         
-        if reg_type == "SC":
-            t1.model1.regime_limit_SC = Constraint(t1.model1.stands, rule=regime_rule_SC)
-        elif reg_type == "FC":
-            t1.model1.regime_limit_FC = Constraint(t1.model1.stands, rule=regime_rule_FC)
-        else:
-            print("NO restriction")
+                            
+                                                                                         
+                              
+                                                                                         
+             
+                                   
         counter = 0
         t1.model1.flow_p_npv = 0
         t1.model1.flow_p_inc = 0
@@ -833,6 +876,7 @@ if __name__ == '__main__':
                     CO2 = sum(result['CO2_MEAN']* result['DEC'])
                     N2O = sum(result['N2O_MEAN']* result['DEC'])
                     CH4 = sum(result['CH4_MEAN']* result['DEC'])
+                    GWT = sum(result['GWT_MEAN']* result['DEC'])
                     NPV_X_ha = sum((result['Income_log'] + result['Income_pulp']-result['DITCHMAINT'])/((1+rr)**(2.5+result['Y1']-2016)) * result['DEC'])+sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])/sum(DATA1["AREA_ALL"])
                     PV_X_ha = sum(result_P10['PV']/((1+rr)**(max(t1.years)-2016)) * result_P10['DEC'])/sum(DATA1["AREA_ALL"])
                     INC_X_ha = min([sum((result.loc[(slice(None),slice(None),year),"Income_log"]+ result.loc[(slice(None),slice(None),year),'Income_pulp'])*result.loc[(slice(None),slice(None),year),'DEC']) for year in t1.years])/sum(result.loc[(slice(None),slice(None),2016.0),'AREA_ALL']*result.loc[(slice(None),slice(None),2016.0),'DEC'])
@@ -842,23 +886,23 @@ if __name__ == '__main__':
                     HARV_X_ha_log = sum(result['H_V_LOG'] * result['DEC'])/sum(DATA1["AREA_ALL"])
                     HARV_X_pulp = sum(result['H_V_PULP'] * result['DEC'])
                     HARV_X_ha_pulp = sum(result['H_V_PULP'] * result['DEC'])/sum(DATA1["AREA_ALL"])
-                    data_only[flow_PEAT*1000+flow_OBJ]=[NPV_X,INC_X,-t1.model1.PEAT_CO2_EQV.value+t1.model1.BM_CO2_EQV.value,t1.model1.C_soil_CO2_EQV.value,t1.model1.BM_CO2_EQV.value,t1.model1.PEAT_CO2_EQV_100.value,NPV_X_ha,INC_X_ha,-t1.model1.PEAT_CO2_EQV.value+t1.model1.BM_CO2_EQV.value,t1.model1.DEC_inc.value*t1.model1.max_INC_mut.value,t1.model1.PEAT_CO2_EQV.value,t1.model1.BM_CO2_EQV.value,flow_PEAT,CO2,N2O,CH4,HARV_X,HARV_X_ha,HARV_X_log,HARV_X_ha_log,HARV_X_pulp,HARV_X_ha_pulp]
+                    data_only[flow_PEAT*1000+flow_OBJ]=[NPV_X,INC_X,-t1.model1.PEAT_CO2_EQV.value+t1.model1.BM_CO2_EQV.value,t1.model1.C_soil_CO2_EQV.value,t1.model1.BM_CO2_EQV_INV.value,t1.model1.PEAT_CO2_EQV_100.value,NPV_X_ha,INC_X_ha,-t1.model1.PEAT_CO2_EQV.value+t1.model1.BM_CO2_EQV.value,t1.model1.DEC_inc.value*t1.model1.max_INC_mut.value,t1.model1.PEAT_CO2_EQV.value,t1.model1.BM_CO2_EQV.value,flow_PEAT,CO2,N2O,CH4,GWT,HARV_X,HARV_X_ha,HARV_X_log,HARV_X_ha_log,HARV_X_pulp,HARV_X_ha_pulp,t1.model1.BM_CO2_EQV_INV.value]
                     Harv = [sum((result.loc[(result.index.get_level_values('year') == year)]['Income_log']+result.loc[(result.index.get_level_values('year') == year)]['Income_pulp']) * result.loc[(result.index.get_level_values('year') == year)]['DEC']) for year in t1.years]
                     Harv_PEAT = [sum((result.loc[(result.index.get_level_values('year') == year)]['Income_log']+result.loc[(result.index.get_level_values('year') == year)]['Income_pulp']) * result.loc[(result.index.get_level_values('year') == year)]['DEC']*result.loc[(result.index.get_level_values('year') == year)]['PEAT']) for year in t1.years]
                     data_only_harv[flow_PEAT*1000+flow_OBJ] = Harv
                     data_only_harv_peat[flow_PEAT*1000+flow_OBJ] = Harv_PEAT
                     decs[flow_PEAT*1000+flow_OBJ] = b1 
         return data_only, data_only_harv, data_only_harv_peat, decs
-
+    
     import matplotlib
     import numpy as np
-
+    
     data_only_ALL_NPV, data_only_harv_ALL_NPV, data_only_harv_peat_ALL_NPV, data_only_ALL_decs = limit_regimes(t3,"ALL",trade_off)
     data_all_pd_NPV = pd.DataFrame(data_only_ALL_NPV).transpose()
-    data_all_pd_NPV.columns = ['ALL_NPV','ALL_INC','ALL_PEAT_CO2_EKV','ALL_C_Soil','ALL_BM_total','ALL_PEAT_CO2_EKV_RAND','NPV_X_ha','INC_X_ha','PEAT',"INC_DEC","PEAT_CO2","BM_CO2","const_flow","CO2","N2O","CH4","HARV_X","HARV_X_ha","HARV_X_LOG","HARV_X_ha_LOG","HARV_X_PULP","HARV_X_ha_PULP"] 
-
-    data_all_pd_NPV.to_csv(path_output + "ALLNPV_DATA_2_"+constraint+"x"+RG+".csv")
-
+    data_all_pd_NPV.columns = ['ALL_NPV','ALL_INC','ALL_PEAT_CO2_EKV','ALL_C_Soil','ALL_BM_total','ALL_PEAT_CO2_EKV_RAND','NPV_X_ha','INC_X_ha','PEAT',"INC_DEC","PEAT_CO2","BM_CO2","const_flow","CO2","N2O","CH4","GWT","HARV_X","HARV_X_ha","HARV_X_LOG","HARV_X_ha_LOG","HARV_X_PULP","HARV_X_ha_PULP","BM_CO2_INV"] 
+    
+    data_all_pd_NPV.to_csv(path_output + "ALLNPV_DATA_2_"+constraint+"x"+RG+"_BM_GHG.csv")
+    
     for k in data_only_ALL_decs.keys():
         data_only_ALL_decs[k]["ITER"]= k
-    pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())]).to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS.csv")
+    pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())]).to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_BM_GHG.csv")
