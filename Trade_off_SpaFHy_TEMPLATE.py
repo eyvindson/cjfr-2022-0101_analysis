@@ -672,6 +672,5 @@ if __name__ == '__main__':
     
     for k in data_only_ALL_decs.keys():
         data_only_ALL_decs[k]["ITER"]= k
-    #pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())]).to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+".csv")
     DEC_DAT = pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())])
     DEC_DAT[DEC_DAT["DEC"] >0].to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+"_V1.csv")
