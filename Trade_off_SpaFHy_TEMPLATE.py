@@ -41,13 +41,13 @@ if __name__ == '__main__':
     RG = args.area #"Uusimaa"
     trade_off = args.trade #"INC_PEAT"
     constraint = args.constraint #"NPV"
-    EMMISSIONS = args.emmision_type #"BM_GHG"
+    EMISSIONS = args.emmision_type #"BM_GHG"
 
 
     class optimization:
         def __init__(self):
             small = False
-            self.data = pd.read_pickle(path + "rslt_GWT_w_SPAFHY_PEAT_"+RG+".pkl",compression="bz2")
+            self.data = pd.read_pickle(path + "/data/rslt_GWT_w_SPAFHY_PEAT_"+RG+".pkl",compression="bz2")
             self.data = self.data.reset_index().drop(['index'],axis=1)
             
             self.dd1 = self.data[(~self.data['branching_group'].str.contains("Selection"))]
@@ -188,7 +188,7 @@ if __name__ == '__main__':
             self.model1.regime_limit = Constraint(self.model1.stands, rule=regime_rule)
             
         def solve(self):
-            opt = SolverFactory('cbc')
+            opt = SolverFactory('glpk')
             self.results = opt.solve(self.model1,tee=False)
 
     t2 = optimization()    
@@ -283,7 +283,7 @@ if __name__ == '__main__':
     #INITIAL DATA
     import sqlite3
     name_convert = {"Keski-Suomi":"KS","Pohjois-Pohjanmaa":"PP","Uusimaa":"UU"}
-    path1= "/scratch/project_2000611/KYLE/SpaFHy_manuscript/data"
+    path1= path + "/data"
     conn = sqlite3.connect(path1 +"/simulated_SPAFHY_"+name_convert[RG]+"_INIT.db")
     c = conn.cursor()
     
@@ -303,7 +303,7 @@ if __name__ == '__main__':
         
         CH4_CO2EQV = CH4*25
         N2O_CO2EQV = N2O*298
-        if EMMISSIONS == "BM":
+        if EMISSIONS == "BM":
             max_PEAT = BM_CO2EQV
         elif EMISSIONS == "GHG":
             max_PEAT =(N2O_CO2EQV+CH4_CO2EQV+CO2)
@@ -493,7 +493,7 @@ if __name__ == '__main__':
     t3.model1.flow_p_OBJ = Param(default=1, mutable=True)
     t3.model1.DEC_inc = Var(within=NonNegativeReals, bounds=(0,1), initialize=1)
     
-    def limit_regimes(t1,reg_type,OPT):
+    def limit_regimes(t1,reg_type,OPT,EMISSIONS):
         
         def INC_bounded_rule(model1,year):
             INC2 = (sum((t1.Income_log.loc[s,r,year]+t1.Income_pulp.loc[s,r,year]) * t1.model1.X1[(s,r)] for (s,r) in t1.model1.index1)/t1.model1.max_INC_mut)
@@ -665,11 +665,13 @@ if __name__ == '__main__':
                     decs[flow_PEAT*1000+flow_OBJ] = b1 
         return data_only, data_only_harv, data_only_harv_peat, decs
     
-    data_only_ALL_NPV, data_only_harv_ALL_NPV, data_only_harv_peat_ALL_NPV, data_only_ALL_decs = limit_regimes(t3,"ALL",trade_off)
+    data_only_ALL_NPV, data_only_harv_ALL_NPV, data_only_harv_peat_ALL_NPV, data_only_ALL_decs = limit_regimes(t3,"ALL",trade_off,EMISSIONS)
     data_all_pd_NPV = pd.DataFrame(data_only_ALL_NPV).transpose()
     data_all_pd_NPV.columns = ['ALL_NPV','ALL_INC','ALL_PEAT_CO2_EKV','ALL_C_Soil','ALL_BM_total','ALL_PEAT_CO2_EKV_RAND','NPV_X_ha','INC_X_ha','PEAT',"INC_DEC","PEAT_CO2","BM_CO2","const_flow","CO2","N2O","CH4","GWT","HARV_X","HARV_X_ha","HARV_X_LOG","HARV_X_ha_LOG","HARV_X_PULP","HARV_X_ha_PULP","BM_CO2_INV"] 
     data_all_pd_NPV.to_csv(path_output + "ALLNPV_DATA_2_"+constraint+"x"+RG+"_"+EMISSIONS+".csv")
     
     for k in data_only_ALL_decs.keys():
         data_only_ALL_decs[k]["ITER"]= k
-    pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())]).to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+".csv")
+    #pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())]).to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+".csv")
+    DEC_DAT = pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())])
+    DEC_DAT[DEC_DAT["DEC"] >0].to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+"_V1.csv")
