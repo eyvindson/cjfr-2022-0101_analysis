@@ -19,8 +19,6 @@ import statistics as stat
 import matplotlib
 import os
 
-#path = "/home/ubuntu/workspace/pyomo/"
-
 path = os.getcwd()
 path_output= path+"/results"
 if not os.path.exists(path_output):
@@ -668,9 +666,9 @@ if __name__ == '__main__':
     data_only_ALL_NPV, data_only_harv_ALL_NPV, data_only_harv_peat_ALL_NPV, data_only_ALL_decs = limit_regimes(t3,"ALL",trade_off,EMISSIONS)
     data_all_pd_NPV = pd.DataFrame(data_only_ALL_NPV).transpose()
     data_all_pd_NPV.columns = ['ALL_NPV','ALL_INC','ALL_PEAT_CO2_EKV','ALL_C_Soil','ALL_BM_total','ALL_PEAT_CO2_EKV_RAND','NPV_X_ha','INC_X_ha','PEAT',"INC_DEC","PEAT_CO2","BM_CO2","const_flow","CO2","N2O","CH4","GWT","HARV_X","HARV_X_ha","HARV_X_LOG","HARV_X_ha_LOG","HARV_X_PULP","HARV_X_ha_PULP","BM_CO2_INV"] 
-    data_all_pd_NPV.to_csv(path_output + "ALLNPV_DATA_2_"+constraint+"x"+RG+"_"+EMISSIONS+".csv")
+    data_all_pd_NPV.to_csv(path_output + "/ALLNPV_DATA_2_"+constraint+"x"+RG+"_"+EMISSIONS+".csv")
     
     for k in data_only_ALL_decs.keys():
         data_only_ALL_decs[k]["ITER"]= k
     DEC_DAT = pd.concat([data_only_ALL_decs[v] for v in list(data_only_ALL_decs.keys())])
-    DEC_DAT[DEC_DAT["DEC"] >0].to_csv(path_output+"ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+"_V1.csv")
+    DEC_DAT[DEC_DAT["DEC"] >0].to_csv(path_output+"/ALLNPV_DATA_2_"+constraint+"x"+RG+"_DECS_"+EMISSIONS+"_V1.csv")
