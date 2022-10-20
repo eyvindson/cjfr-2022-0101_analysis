@@ -299,8 +299,8 @@ if __name__ == '__main__':
         N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)].value * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298
+        CH4_CO2EQV = CH4*28
+        N2O_CO2EQV = N2O*265
         if EMISSIONS == "BM":
             max_PEAT = BM_CO2EQV
         elif EMISSIONS == "GHG":
@@ -352,8 +352,8 @@ if __name__ == '__main__':
             CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
             CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-            CH4_CO2EQV = CH4*25
-            N2O_CO2EQV = N2O*298
+            CH4_CO2EQV = CH4*28
+            N2O_CO2EQV = N2O*265
             if EMISSIONS == "BM":
                 PEAT  = BM_CO2EQV
             elif EMISSIONS == "GHG":
@@ -438,8 +438,8 @@ if __name__ == '__main__':
         CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)        
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298 
+        CH4_CO2EQV = CH4*28
+        N2O_CO2EQV = N2O*265 
         return t3.model1.PEAT_CO2_EQV == ((CH4_CO2EQV + N2O_CO2EQV+CO2))
     
     t3.model1.objBundle4 = Constraint(rule=objEM_CO2_EQV_rule)
@@ -452,8 +452,8 @@ if __name__ == '__main__':
         CH4 = sum((t3.CH4_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         N2O = sum((t3.N2O_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
         CO2 = sum((t3.CO2_MEAN.loc[s,r,year]) * t3.model1.X1[(s,r)] * t3.PEAT.loc[s,r,year] for (s,r) in t3.model1.index1 for year in t3.years)
-        CH4_CO2EQV = CH4*25
-        N2O_CO2EQV = N2O*298 
+        CH4_CO2EQV = CH4*28
+        N2O_CO2EQV = N2O*265 
         return t3.model1.PEAT_CO2_EQV_100 == ((CH4_CO2EQV + N2O_CO2EQV+CO2))
 
     t3.model1.objBundle5 = Constraint(rule=objEM_CO2_EQV_rule_stoch)
