@@ -17,13 +17,14 @@ import copy
 import matplotlib.pyplot as plt
 import statistics as stat
 import matplotlib
-    
-#path = "/home/ubuntu/workspace/pyomo/"
-path = "/scratch/project_2000611/KYLE/AVO2/Files_for_optimization/"
-pyutilib.services.TempfileManager.tempdir = path
+import os
 
-path = "/scratch/project_2000611/KYLE/SpaFHy_manuscript/simulated_data/"
-path_output = "/scratch/project_2000611/KYLE/SpaFHy_manuscript/"
+#path = "/home/ubuntu/workspace/pyomo/"
+
+path = os.getcwd()
+path_output= path+"/results"
+if not os.path.exists(path_output):
+    os.makedirs(path_output)
 
 if __name__ == '__main__':
     import argparse
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    RG = args.area #"Keski-Suomi"
+    RG = args.area #"Uusimaa"
     trade_off = args.trade #"INC_PEAT"
     constraint = args.constraint #"NPV"
     EMMISSIONS = args.emmision_type #"BM_GHG"
@@ -46,17 +47,7 @@ if __name__ == '__main__':
     class optimization:
         def __init__(self):
             small = False
-            
-            #NO ditching
-            self.data_no = pd.read_csv(path + "rslt_GWT_w_SPAFHY_PEAT_"+RG+"_no.csv")
-            #Yes to ditching
-            self.data_yes = pd.read_csv(path + "rslt_GWT_w_SPAFHY_PEAT_"+RG+"_yes.csv")
-                                                
-                                                 
-            self.data_no = self.data_no[self.data_no['standid']>0]  
-            self.data_yes = self.data_yes[self.data_yes['standid']>0]
-            
-            self.data = pd.concat([self.data_no,self.data_yes],axis=0)
+            self.data = pd.read_pickle(path + "rslt_GWT_w_SPAFHY_PEAT_"+RG+".pkl",compression="bz2")
             self.data = self.data.reset_index().drop(['index'],axis=1)
             
             self.dd1 = self.data[(~self.data['branching_group'].str.contains("Selection"))]
