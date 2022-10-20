@@ -361,7 +361,7 @@ if __name__ == '__main__':
             elif EMISSIONS == "GHG":
                 PEAT = (N2O_CO2EQV+CH4_CO2EQV+CO2)
             else:
-                PEAT = EMISSIONS - (N2O_CO2EQV+CH4_CO2EQV+CO2)
+                PEAT = BM_CO2EQV - (N2O_CO2EQV+CH4_CO2EQV+CO2)
             return PEAT
         t3.model1.OBJ = Objective(rule=outcome_rule, sense=maximize)
                         
@@ -634,12 +634,9 @@ if __name__ == '__main__':
                 t1.model1.flow_p_OBJ = flow_OBJ*0.05
                 t1.solve()
                 if (t1.results.solver.status == SolverStatus.ok) and (t1.results.solver.termination_condition == TerminationCondition.optimal):
-                    b1 = pd.DataFrame(t1.model1.X1)
-                    b1["Dec"] = 0.0
-                    for l in range(0,len(b1)):
-                        b1["Dec"][l] = t1.model1.X1[(b1[0][l],b1[1][l])].value
-                    b1 = b1.rename(columns = {0:"id",1:"branching_group","Dec":"DEC"})
-                    b1.set_index(["id","branching_group"],inplace=True)
+                    b1 = copy.copy(t3.t1)
+                    b1['DEC']=list(t3.model1.X1[:,:].value)
+                    b1 = b1.drop(['v'],axis=1)
                     result = DATA1.join(b1, how='inner')
                     result_P1 = result.loc[(result.index.get_level_values('year') == 2016)]
                     result_P2 = result.loc[(result.index.get_level_values('year') == 2021)]
