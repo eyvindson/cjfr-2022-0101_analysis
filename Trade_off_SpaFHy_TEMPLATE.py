@@ -30,16 +30,16 @@ if __name__ == '__main__':
     import glob
     parser = argparse.ArgumentParser()
     parser.add_argument('--area', help='which region, Keski-Suomi, Pohjois-Pohjanmaa, Uusimaa ', type=str)
-    parser.add_argument('--trade', help ='Is the tradeoff between INC_PEAT, NPV_PEAT, or PEAT_NPV', type=str)
-    parser.add_argument('--constraint', help ='Is the constraint INC, PEAT or NPV', type=str)
-    parser.add_argument('--emmision_type', help ='Do you wish to prioritize solely biomass growth (BM), GHG emissions (GHG)or their combination (BM_GHG)', type=str)
+    parser.add_argument('--trade', help ='Is the tradeoff between INC_PEAT, NPV_PEAT, or NPV_INC', type=str)
+    parser.add_argument('--constraint', help ='Is the constraint NPV, INC or PEAT', type=str)
+    parser.add_argument('--emission_type', help ='Do you wish to prioritize solely biomass growth (BM), GHG emissions (GHG)or their combination (BM_GHG)', type=str)
     
     args = parser.parse_args()
     
     RG = args.area #"Uusimaa"
     trade_off = args.trade #"INC_PEAT"
     constraint = args.constraint #"NPV"
-    EMISSIONS = args.emmision_type #"BM_GHG"
+    EMISSIONS = args.emission_type #"BM_GHG"
 
 
     class optimization:
