@@ -6,6 +6,7 @@ README.md -- brief instructions to run the analysis.
 LICENSE -- an MIT license for this git.
 Trade_off_SpaFHy_TEMPLATE.py -- python script to run the optimization analysis.
 Figures.ipynb -- ipython notebook to construct the figures from the manuscript (reduced to a single case) -- Note all 3 solutions need to be solved before running.
+environment.yml -- conda environment file, detailing packages used in the analysis
 
 This code relies entirely on python script. 
 
