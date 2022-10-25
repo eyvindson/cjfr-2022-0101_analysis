@@ -1,4 +1,4 @@
-# Quant_GHG
+# Trade-off analysis
 Optimization and visualization code for "Trade-offs between greenhouse gas mitigation and economic objectives with drained peatlands in Finnish landscapes" manuscript
 
 The following files are contained in this directory:
